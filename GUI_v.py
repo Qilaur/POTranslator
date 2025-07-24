@@ -40,6 +40,7 @@ class TranslatorApp(TkinterDnD.Tk):
         self.translated_count = 0
         self.total_entries = 0
         self.giga_token = None
+        self.continue_button_on = False
         self.is_over_text = False  # Флаг для отслеживания наведения на текстовые поля
         self.create_widgets()
         self.check_queue()
@@ -231,6 +232,7 @@ class TranslatorApp(TkinterDnD.Tk):
         self.po = polib.pofile(self.input_file)
         self.total_entries = len(self.po)
         self.translated_count = 0
+        self.current_entry_index = 0  # Инициализируем индекс текущей записи
         self.progress_bar["maximum"] = self.total_entries
         self.progress_label.config(text=f"Прогресс: 0/{self.total_entries} записей")
         
@@ -240,9 +242,13 @@ class TranslatorApp(TkinterDnD.Tk):
         threading.Thread(target=self.translate_thread, daemon=True).start()
 
     def translate_thread(self):
-        for entry in self.po:
+        # Начинаем с текущего индекса, а не с начала
+        for i in range(self.current_entry_index, len(self.po)):
             if not self.translating:
                 break
+            
+            entry = self.po[i]
+            self.current_entry_index = i + 1  # Обновляем индекс текущей записи
             
             if entry.msgid_plural:
                 if all(not entry.msgstr_plural.get(str(i), '') for i in range(self.nplurals)):
@@ -273,7 +279,6 @@ class TranslatorApp(TkinterDnD.Tk):
                     self.continue_button.config(state="normal")
                     self.stop_button.config(state="normal")
                     return
-                # иначе — автоматическое продолжение без паузы
         
         self.queue.put("done")
 
